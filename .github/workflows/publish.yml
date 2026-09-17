@@ -1,18 +1,36 @@
 name: Publish to NPM
 on:
   workflow_dispatch
+
+# Least privilege: the job only needs to read the repo and mint an OIDC token
+# for npm provenance. Without this the default token is read/write on contents.
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: Setup Node
-        uses: actions/setup-node@v2
+        # Pinned to a released major; v2 runs on an end-of-life runner image.
+        uses: actions/checkout@v4
         with:
-          node-version: '14.x'
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
           registry-url: 'https://registry.npmjs.org'
-      - run: yarn install
-      - run: npm publish --access public
+      # --ignore-scripts keeps install/postinstall hooks of transitive
+      # dependencies from executing arbitrary code in a job that holds the
+      # publishing token.
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - name: Publish
+        # --provenance ties the published tarball to this workflow run.
+        run: npm publish --access public --provenance --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

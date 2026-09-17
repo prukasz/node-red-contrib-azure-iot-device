@@ -1,0 +1,20 @@
+node_modules/
+package-lock.json.bak
+*.tgz
+
+npm-debug.log*
+yarn-error.log*
+.npm/
+
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Never commit device credentials or exported flows that may embed them.
+flows*.json
+*.pem
+*.key
+*.cert
+*.crt
+.env
